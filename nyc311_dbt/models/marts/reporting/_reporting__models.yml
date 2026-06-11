@@ -1,0 +1,99 @@
+version: 2
+
+models:
+  - name: dashboard_daily_summary
+    description: >
+      "Daily aggregation of 311 complaints by (date × borough × category).
+      Pre-computed for fast dashboard queries - BI tools query this instead
+      of scanning fct_complaints.
+      Includes volume counts (total, resolved, open, quality-of-life,
+      emergency), rate measures (% resolved), and response time
+      distributions (median, P90, max).
+      Grain: one row per (created_date, borough_name, category)."
+
+    config:
+      contract:
+        enforced: true
+
+    columns:
+      - name: created_date
+        description: "Date the complaints in this group were filed."
+        data_type: date
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: borough_name
+        description: "Borough name (denormalized from dim_borough)."
+        data_type: varchar
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: category
+        description: "Complaint category (denormalized from dim_complaint_type)."
+        data_type: varchar
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: total_complaints
+        description: "Total complaints filed in this (date, borough, category) group."
+        data_type: number(18,0)
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">0"
+
+      - name: resolved_complaints
+        description: "Complaints in this group that are resolved."
+        data_type: number(18,0)
+
+      - name: open_complaints
+        description: "Complaints in this group still open."
+        data_type: number(18,0)
+
+      - name: quality_of_life_complaints
+        description: "Complaints flagged as quality-of-life issues."
+        data_type: number(18,0)
+
+      - name: emergency_complaints
+        description: "Complaints flagged as potential emergencies."
+        data_type: number(18,0)
+
+      - name: pct_resolved
+        description: "Percentage of complaints in this group that are resolved (0-100)."
+        data_type: number(5,1)
+
+      - name: median_response_hours
+        description: "Median hours to close, for closed complaints in this group."
+        data_type: number(18,1)
+
+      - name: p90_response_hours
+        description: "90th-percentile hours to close (slowest 10% start here)."
+        data_type: number(18,1)
+
+      - name: max_response_hours
+        description: "Slowest individual complaint in this group, in hours."
+        data_type: number(18,2)
+
+      - name: report_loaded_at
+        description: "Timestamp when this summary row was last built."
+        data_type: timestamp_ntz
+        constraints:
+          - type: not_null
+
+
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - created_date
+              - borough_name
+              - category

@@ -1,0 +1,53 @@
+
+name: 'nyc311_dbt'
+version: '1.0.0'
+config-version: 2
+
+profile: 'nyc311_dbt'
+
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:         
+  - "target"
+  - "dbt_packages"
+
+
+vars:
+  start_date: '2020-01-01'
+
+models:
+  nyc311_dbt:
+    
+    staging:
+      +materialized: view
+      +schema: silver
+    
+    intermediate:
+      +materialized: view
+      +schema: silver
+    
+    marts:
+      +materialized: table
+      +schema: gold
+      core:
+        +schema: gold
+      reporting:
+        +schema: gold
+
+
+seeds:
+  nyc311_dbt:
+    +schema: silver
+
+snapshots:
+  nyc311_dbt:
+    +schema: silver
+
+
+

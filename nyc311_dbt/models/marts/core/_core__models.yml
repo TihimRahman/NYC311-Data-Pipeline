@@ -1,0 +1,351 @@
+version: 2
+
+models:
+  - name: dim_borough
+    description: >
+      "Conformed borough dimension. One row per NYC borough plus an
+      unknown sentinel row for facts with missing borough data.
+      Joins observed boroughs from the silver layer to static metadata
+      in borough_lookup. Generates a deterministic surrogate key from
+      the natural key (borough_name).
+      Grain: one row per borough_name (6 rows total)."
+    
+    config:
+      contract:
+        enforced: true
+    
+    
+    columns:
+      - name: borough_sk
+        description: "Surrogate key. MD5 hash of borough_name. Primary key, FK target for fct_complaints."
+        data_type: varchar
+        constraints:
+          - type: not_null
+          - type: primary_key
+        tests:
+          - not_null
+          - unique
+
+
+      - name: borough_name
+        description: "Natural key. Title-cased borough name."
+        data_type: varchar
+        constraints:
+          - type: not_null
+        tests:
+          - unique
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island', 'Unknown']
+
+
+      - name: borough_code
+        description: "Two-letter borough code (MN, BK, QN, BX, SI, UN)."
+        data_type: varchar
+
+      - name: county_name
+        description: "Official US county name. May differ from borough name (e.g. Brooklyn = Kings)."
+        data_type: varchar
+
+      - name: population_2020
+        description: "Borough population from the 2020 US Census. NULL for Unknown."
+        data_type: number(10,0)
+
+      - name: area_sq_mi
+        description: "Borough land area in square miles. NULL for Unknown."
+        data_type: number(10,0)
+
+      - name: population_density_per_sq_mi
+        description: "Derived: population_2020 / area_sq_mi, rounded."
+        data_type: number(10,0)
+
+      - name: is_missing_metadata
+        description: "True if this borough appears in fact data but is absent from borough_lookup.csv."
+        data_type: boolean
+        constraints:
+          - type: not_null
+
+      - name: dim_loaded_at
+        description: "Timestamp when this dimension row was last built."
+        data_type: timestamp_ntz
+        constraints:
+          - type: not_null
+
+
+
+
+  - name: dim_complaint_type
+    description: >
+      "Conformed complaint-type dimension. One row per distinct complaint_type
+      observed in data, enriched with category metadata from
+      complaint_type_lookup. Unmatched types default to category='Other'
+      and are flagged via is_missing_metadata. Includes 'Unknown' sentinel
+      for NULL complaint_type.
+      Grain: one row per complaint_type (open-ended)."
+
+    config:
+      contract:
+        enforced: true
+
+    columns:
+      - name: complaint_type_sk
+        description: "Surrogate key. MD5 hash of complaint_type. PK and FK target for fct_complaints."
+        data_type: varchar
+        constraints:
+          - type: not_null
+          - type: primary_key
+        tests:
+          - unique
+          - not_null
+
+      - name: complaint_type
+        description: "Natural key. Title-cased complaint type from source."
+        data_type: varchar
+        constraints:
+          - type: not_null
+        tests:
+          - unique
+          - not_null
+
+      - name: category
+        description: "Broad analytical category. Defaults to 'Other' for unmatched types."
+        data_type: varchar
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: is_quality_of_life
+        description: "Boolean: true if complaint type relates to quality of life. Defaults to false."
+        data_type: boolean
+        constraints:
+          - type: not_null
+
+      - name: is_emergency
+        description: "Boolean: true if complaint type can indicate an emergency. Defaults to false."
+        data_type: boolean
+        constraints:
+          - type: not_null
+
+      - name: is_missing_metadata
+        description: "True if complaint type appears in data but not in complaint_type_lookup.csv. Signal to expand the seed."
+        data_type: boolean
+        constraints:
+          - type: not_null
+
+      - name: dim_loaded_at
+        description: "Timestamp when this dimension row was last built."
+        data_type: timestamp_ntz
+        constraints:
+          - type: not_null
+
+
+
+  - name: fct_complaints
+    description: >
+      "Central fact table for the 311 complaints star schema. One row per
+      complaint. Joins to dim_borough and dim_complaint_type via surrogate
+      keys; carries degenerate dimensions, date keys, measures, and flags.
+      Foreign keys are never NULL — facts with missing borough or
+      complaint_type route to the corresponding "Unknown" sentinel.
+      Grain: one row per complaint_id."
+
+    config:
+      contract:
+        enforced: true
+
+    columns:
+      - name: complaint_sk
+        description: "Surrogate key. MD5(complaint_id). PK of the fact table."
+        data_type: varchar
+        constraints:
+          - type: not_null
+          - type: primary_key
+        tests:
+          - unique
+          - not_null
+
+
+      - name: borough_sk
+        description: "FK to dim_borough. Never NULL — missing values route to Unknown sentinel."
+        data_type: varchar
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_borough')
+                field: borough_sk
+
+      - name: complaint_type_sk
+        description: "FK to dim_complaint_type. Never NULL — missing values route to Unknown sentinel."
+        data_type: varchar
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_complaint_type')
+                field: complaint_type_sk
+
+
+      - name: complaint_id
+        description: "Natural key (NYC 311 unique_key). Kept on the fact for human readability."
+        data_type: varchar
+        constraints:
+          - type: not_null
+        tests:
+          - unique
+          - not_null
+
+      - name: agency_code
+        description: "Responding agency short code."
+        data_type: varchar
+
+      - name: agency_name
+        description: "Responding agency name."
+        data_type: varchar
+
+      - name: status
+        description: "Title-cased complaint status."
+        data_type: varchar
+
+      - name: submission_channel
+        description: "How the complaint was submitted (phone, online, etc.)."
+        data_type: varchar
+
+      - name: incident_zip
+        description: "ZIP code of the incident location."
+        data_type: varchar
+
+      - name: incident_address
+        description: "Street address of the incident."
+        data_type: varchar
+
+      - name: community_board
+        description: "NYC community board for the incident."
+        data_type: varchar
+
+      - name: council_district
+        description: "NYC council district for the incident."
+        data_type: varchar
+
+      - name: latitude
+        description: "Latitude in decimal degrees. NULL if outside NYC bounds or missing."
+        data_type: number(18,12)
+
+      - name: longitude
+        description: "Longitude in decimal degrees."
+        data_type: number(18,12)
+
+   
+      - name: created_at
+        description: "Timestamp when the complaint was filed."
+        data_type: timestamp_ntz
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+
+      - name: created_date
+        description: "created_at truncated to date."
+        data_type: date
+
+      - name: created_week
+        description: "created_at truncated to week start."
+        data_type: date
+
+      - name: created_month
+        description: "created_at truncated to month start."
+        data_type: date
+
+      - name: created_year
+        description: "Year of created_at."
+        data_type: number(4,0)
+
+      - name: created_hour
+        description: "Hour-of-day (0–23) of created_at."
+        data_type: number(2,0)
+
+      - name: created_day_of_week
+        description: "Day-of-week name from created_at."
+        data_type: varchar
+
+      - name: closed_at
+        description: "Timestamp when complaint was closed. NULL for open complaints."
+        data_type: timestamp_ntz
+
+      - name: resolution_updated_at
+        description: "Timestamp when resolution was last updated."
+        data_type: timestamp_ntz
+
+    
+      - name: response_time_hours
+        description: "Hours between creation and closure. NULL for open complaints."
+        data_type: number(18,2)
+
+      - name: response_time_days
+        description: "Days between creation and closure."
+        data_type: number(18,2)
+
+      - name: days_since_created
+        description: "Days between created_at and now."
+        data_type: number(18,0)
+
+  
+      - name: is_resolved
+        description: "True if complaint is closed and has a closure timestamp."
+        data_type: boolean
+        constraints:
+          - type: not_null
+
+      - name: is_open
+        description: "True if complaint is still open."
+        data_type: boolean
+        constraints:
+          - type: not_null
+
+      - name: has_geolocation
+        description: "True if latitude and longitude are both non-null."
+        data_type: boolean
+        constraints:
+          - type: not_null
+
+      - name: has_borough
+        description: "True if borough is non-null."
+        data_type: boolean
+        constraints:
+          - type: not_null
+
+
+      - name: complaint_age_bucket
+        description: "Categorical bucket of complaint age relative to now."
+        data_type: varchar
+
+      - name: resolution_description
+        description: "Free-text description of the resolution."
+        data_type: varchar
+
+   
+      - name: extracted_at
+        description: "When the source row was loaded into bronze."
+        data_type: timestamp_ntz
+        constraints:
+          - type: not_null
+
+      - name: fct_loaded_at
+        description: "When this fact row was built."
+        data_type: timestamp_ntz
+        constraints:
+          - type: not_null
+
+    tests:
+
+      - dbt_utils.equal_rowcount:
+          arguments:
+            compare_model: ref('int_complaints__enriched')
+          config:
+            severity: warn

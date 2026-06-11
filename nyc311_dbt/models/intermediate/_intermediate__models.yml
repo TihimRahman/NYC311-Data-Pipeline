@@ -1,0 +1,169 @@
+version: 2
+
+models:
+  - name: int_complaints__enriched
+    description: >
+     "Business-enriched view of complaints. Adds derived fields for
+      response time, resolution status, age buckets, date parts, and
+      quality flags. This is the canonical business view of a complaint
+      and is the source of truth for downstream facts and reports.
+      Grain: one row per complaint (1:1 with stg_nyc311__complaints)."
+
+    columns:
+      - name: complaint_id
+        description: "NYC 311 unique key. Primary key of this model."
+        tests:
+          - unique
+          - not_null
+      
+      - name: created_at
+        description: "Timestamp when the complaint was filed."
+        tests:
+          - not_null
+
+      - name: closed_at
+        description: "Timestamp when the complaint was closed. NULL for open complaints."
+      
+      - name: created_date
+        description: "created_at truncated to date. Useful for daily aggregations."
+        tests:
+          - not_null
+
+      - name: created_month
+        description: "created_at truncated to first day of month."
+        tests:
+          - not_null
+
+      - name: created_year
+        description: "Year of created_at."
+        tests:
+          - not_null
+
+      - name: response_time_hours
+        description: >
+          "Hours between creation and closure. NULL for open complaints
+          and for any row where closed_at < created_at (data quality
+          guard — should never happen, but we don't trust it)."
+        
+        tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+              config:
+                where: "response_time_hours is not null"
+      
+      - name: response_time_days
+        description: "Same as response_time_hours but in days."
+        tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+              config:
+                where: "response_time_days is not null"
+
+
+      - name: is_resolved
+        description: >
+          "Boolean: true if the complaint has been closed with a real
+          closure timestamp. The authoritative "is this done?" field."
+
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+                quote: false
+
+
+      - name: is_open
+        description: >
+
+
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+                quote: false
+
+
+      - name: days_since_created
+        description: "Days between created_at and now. Non-deterministic — changes between runs."
+
+        tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: ">= 0"
+
+      - name: complaint_age_bucket
+        description: "Categorical bucket of complaint age relative to now."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Same Day','Same Week', 'Within Month', 'Within Quarter', 'Over Quarter']
+
+      - name: has_geolocation
+        description: "Boolean: true if both latitude and longitude are non-null."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+                quote: false
+      
+      - name: has_borough
+        description: "Boolean: true if borough is non-null."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+                quote: false
+
+      - name: borough
+        description: "NYC borough (title-cased). NULL for unspecified/invalid values."
+
+      - name: latitude
+        description: "Latitude in decimal degrees. NULL if outside NYC bounds or missing."
+
+      - name: longitude
+        description: "Longitude in decimal degrees. NULL if outside NYC bounds or missing."
+
+      - name: agency_code
+        description: "Responding agency short code."
+
+      - name: complaint_type
+        description: "Title-cased complaint category."
+
+      
+      - name: status
+        description: "Title-cased complaint status."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ["Open", "Pending", "Started", "In Progress", "Assigned", "Closed", "Resolved", "Unspecified"]
+              config:
+                where: "status is not null"
+
+    tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "closed_at >= created_at"
+          config:
+            where: "closed_at is not null"
+            severity: warn
+
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "not (is_open and is_resolved)"
+            name: not_both_resolved_and_open
+            config:
+              severity: warn
+
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: (is_resolved and response_time_hours is not null) or (not is_resolved and response_time_hours is null)
+            name: resolved_if_response_time_exist
+            config:
+              severity: warn

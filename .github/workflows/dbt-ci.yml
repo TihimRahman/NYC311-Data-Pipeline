@@ -1,0 +1,67 @@
+name: dbt CI
+
+# Builds and tests the dbt project on every push / PR.
+#
+# Works out of the box: with no Snowflake credentials configured the build
+# step is skipped and the workflow passes. To make it a real check, add these
+# repository secrets (Settings -> Secrets and variables -> Actions):
+#   SNOWFLAKE_ACCOUNT, SNOWFLAKE_USER, SNOWFLAKE_PASSWORD, SNOWFLAKE_ROLE,
+#   SNOWFLAKE_DATABASE, SNOWFLAKE_WAREHOUSE, SNOWFLAKE_SCHEMA
+# Point SNOWFLAKE_SCHEMA at a disposable CI schema so runs never touch prod.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  dbt-build:
+    runs-on: ubuntu-latest
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+      SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+      SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+      SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+      SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+      DBT_PROFILES_DIR: ${{ github.workspace }}/airflow/dbt_profiles
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dbt
+        run: pip install dbt-snowflake==1.10.*
+
+      - name: dbt deps
+        working-directory: nyc311_dbt
+        run: dbt deps
+
+      - name: dbt parse
+        working-directory: nyc311_dbt
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT || 'dummy' }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER || 'dummy' }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD || 'dummy' }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE || 'dummy' }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE || 'dummy' }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE || 'dummy' }}
+          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA || 'dummy' }}
+        run: dbt parse
+
+      - name: dbt build
+        if: env.SNOWFLAKE_ACCOUNT != ''
+        working-directory: nyc311_dbt
+        run: dbt build --target dev
+
+      - name: Skipped (no Snowflake credentials configured)
+        if: env.SNOWFLAKE_ACCOUNT == ''
+        run: echo "Snowflake secrets not set — skipped dbt build. See workflow comments to enable the full build."

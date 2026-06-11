@@ -1,0 +1,103 @@
+version: 2
+
+models:
+  - name: stg_nyc311__base
+    description: "Flattened, typed version of the raw landed data in snowflake. This model will be used for reference for everything downstream."
+
+    columns: 
+      - name: complaint_id
+        description: "NYC 311 unique key for the complaint. Primary key of the source dataset."
+
+      - name: created_at
+        description: "Timestamp when the complaint was filed. Parsed from ISO string; NULL if unparseable."
+
+      - name: closed_at
+        description: "Timestamp when the complaint was closed. NULL for open complaints or unparseable inputs."
+
+      - name: agency_code
+        description: "Short code for the responding city agency (e.g. NYPD, DOT)."
+
+      - name: agency_name
+        description: "Full name of the responding agency."
+
+      - name: complaint_type
+        description: "High-level category of the complaint (e.g. 'Noise - Residential')."
+
+      - name: complaint_descriptor
+        description: "More specific sub-category under complaint_type."
+
+      - name: status
+        description: "Current state of the complaint (Open, Closed, In Progress, etc.)."
+
+      - name: borough
+        description: "NYC borough where the complaint originated. Raw value from API; cleaned downstream."
+
+      - name: incident_zip
+        description: "ZIP code of the incident location. Kept as string to preserve leading zeros."
+
+      - name: latitude
+        description: "Latitude of the incident, as decimal degrees. NULL if unparseable."
+
+      - name: longitude
+        description: "Longitude of the incident, as decimal degrees. NULL if unparseable."
+
+      - name: extracted_at
+        description: "Pipeline metadata: when this row was loaded into bronze."
+
+
+
+  - name: stg_nyc311__complaints
+    description: "Cleaned staging model. Standardizes categorical casing, collapses empty strings to NULL, drops structurally-broken
+      rows (missing ID or creation timestamp), and bounds-checks coordinates. Duplicate records are dropped."
+
+    columns:
+      - name: complaint_id
+        description: "NYC 311 unique key. Primary key of this model."
+        tests:
+          - not_null
+          - unique
+
+      - name: created_at
+        description: "Timestamp when the complaint was filed. Guaranteed non-null (rows missing this are dropped)."
+        tests:
+          - not_null
+
+      - name: closed_at
+        description: "Timestamp when the complaint was closed. NULL for open complaints (empty string)."
+        
+
+      - name: agency_code
+        description: "Short code for the responding city agency. Trimmed; empty strings collapsed to NULL."
+
+      - name: complaint_type
+        description: "Title-cased complaint category."
+
+      - name: status
+        description: "Title-cased complaint status."
+        tests:
+          
+          - accepted_values:
+              arguments:
+                values: ['Open', 'Closed', 'In Progress', 'Assigned', 'Pending', 'Started', 'Unspecified']
+              config:
+                severity: warn
+
+      - name: borough
+        description: "NYC borough, title-cased. NULL for unspecified/invalid values."
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island']
+              config:
+                where: "borough is not null"
+
+      - name: latitude
+        description: "Latitude in decimal degrees. NULL if outside NYC bounds or unparseable."
+
+      - name: longitude
+        description: "Longitude in decimal degrees. NULL if outside NYC bounds or unparseable."
+
+      - name: extracted_at
+        description: "Pipeline metadata: when this row was loaded into bronze."
+        tests:
+          - not_null

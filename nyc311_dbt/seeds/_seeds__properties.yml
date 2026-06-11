@@ -1,0 +1,84 @@
+version: 2
+
+seeds:
+  # ===================================================================
+  # borough_lookup
+  # ===================================================================
+  - name: borough_lookup
+    description: |
+      Static metadata for NYC's five boroughs: official borough code,
+      county name, 2020 population, land area in square miles. Used to
+      enrich dim_borough with attributes the source API doesn't provide.
+
+    config:
+      column_types:
+        borough_name: varchar(50)
+        borough_code: varchar(2)
+        county_name: varchar(50)
+        population_2020: number(10,0)
+        area_sq_mi: number(6,2)
+
+    columns:
+      - name: borough_name
+        description: "Borough name (title-cased). Matches the cleaned borough value in stg_nyc311__complaints."
+        tests:
+          - unique
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island']
+
+      - name: borough_code
+        description: "Two-letter borough code (MN, BK, QN, BX, SI)."
+        tests:
+          - unique
+          - not_null
+
+      - name: county_name
+        description: "Official US county name. Borough != county in NYC (e.g. Brooklyn = Kings County)."
+        tests:
+          - not_null
+
+      - name: population_2020
+        description: "Borough population from the 2020 US Census."
+        tests:
+          - not_null
+
+      - name: area_sq_mi
+        description: "Borough land area in square miles."
+
+
+  - name: complaint_type_lookup
+    description: >
+      Maps raw NYC 311 complaint_type values to broader analytical
+      categories and boolean flags (quality-of-life, emergency-prone).
+      Hand-curated; expand as new complaint types appear in source data.
+
+    config:
+      column_types:
+        complaint_type: varchar(100)
+        category: varchar(50)
+        is_quality_of_life: boolean
+        is_emergency: boolean
+
+    columns:
+      - name: complaint_type
+        description: "Raw complaint type. Must match exact title-cased form in stg_nyc311__complaints."
+        tests:
+          - unique
+          - not_null
+
+      - name: category
+        description: "Broad analytical category (Noise, Housing, Sanitation, Infrastructure, Transportation, Environment, Social Services, Public Safety, Other)."
+        tests:
+          - not_null
+
+      - name: is_quality_of_life
+        description: "True if this complaint type relates to neighborhood quality of life."
+        tests:
+          - not_null
+
+      - name: is_emergency
+        description: "True if this complaint type can indicate a potential emergency."
+        tests:
+          - not_null

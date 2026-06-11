@@ -1,0 +1,10 @@
+[project]
+name = "nyc311-data-pipeline"
+version = "0.1.0"
+description = "ELT pipeline for NYC 311 complaint data — Socrata API → S3 → Snowflake → dbt"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dbt-snowflake>=1.10.0,<1.11",
+    "requests>=2.34.2",
+]

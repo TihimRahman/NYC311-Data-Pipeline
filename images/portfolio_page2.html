@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio — Project 02</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0d0d0d;
+      color: #e8e8e8;
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 14mm 16mm 12mm;
+      font-size: 9.5pt;
+      line-height: 1.5;
+    }
+
+    /* ── HEADER ─────────────────────────────── */
+    .project-label {
+      font-size: 7.5pt;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: #00d4c8;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    h1 {
+      font-size: 26pt;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 9pt;
+      color: #9a9a9a;
+      margin-bottom: 2px;
+    }
+
+    .github-link {
+      font-size: 9pt;
+      color: #9a9a9a;
+      text-decoration: none;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #2a2a2a;
+      margin: 14px 0;
+    }
+
+    /* ── SECTION LABELS ─────────────────────── */
+    .section-label {
+      font-size: 7.5pt;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: #00d4c8;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    /* ── ARCHITECTURE FLOW ───────────────────── */
+    .arch-flow {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 8px;
+    }
+
+    .arch-box {
+      flex: 1;
+      background: #1a1a1a;
+      border-top: 2px solid #00d4c8;
+      padding: 10px 10px 10px;
+      text-align: center;
+      position: relative;
+    }
+
+    .arch-box strong {
+      display: block;
+      font-size: 9pt;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 2px;
+    }
+
+    .arch-box span {
+      font-size: 7.5pt;
+      color: #888;
+    }
+
+    .arch-arrow {
+      color: #00d4c8;
+      font-size: 14pt;
+      padding: 0 2px;
+      flex-shrink: 0;
+    }
+
+    .arch-caption {
+      font-size: 7.5pt;
+      color: #666;
+      text-align: center;
+      font-style: italic;
+      margin-top: 6px;
+    }
+
+    /* ── ASSET IMAGE ─────────────────────────── */
+    .asset-img-wrap {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 0;
+      text-align: center;
+    }
+
+    .asset-img-wrap img {
+      width: 100%;
+      max-height: 80px;
+      object-fit: contain;
+    }
+
+    /* ── HIGHLIGHTS ─────────────────────────── */
+    .highlights ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .highlights ul li {
+      padding: 3px 0 3px 18px;
+      position: relative;
+      font-size: 9pt;
+      color: #d0d0d0;
+    }
+
+    .highlights ul li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 10px;
+      width: 7px;
+      height: 7px;
+      background: #00d4c8;
+      opacity: 0.6;
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    }
+
+    /* ── STACK CHIPS ─────────────────────────── */
+    .stack-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .chip {
+      border: 1px solid #3a3a3a;
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 8pt;
+      color: #d0d0d0;
+      white-space: nowrap;
+    }
+
+    /* ── DASHBOARD IMAGE ─────────────────────── */
+    .dashboard-wrap {
+      border: 1px solid #2a2a2a;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .dashboard-wrap img {
+      width: 100%;
+      display: block;
+    }
+
+    /* ── FOOTER ──────────────────────────────── */
+    .footer {
+      position: fixed;
+      bottom: 10mm;
+      left: 16mm;
+      right: 16mm;
+      display: flex;
+      justify-content: space-between;
+      font-size: 7.5pt;
+      color: #555;
+      border-top: 1px solid #2a2a2a;
+      padding-top: 6px;
+    }
+
+    section { margin-bottom: 14px; }
+
+    @media print {
+      body { margin: 0; }
+      .footer { position: fixed; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="project-label">Project 02</div>
+  <h1>NYC 311 Complaints Pipeline</h1>
+  <p class="subtitle">AWS S3 · Snowflake · dbt · Airflow · Docker</p>
+  <p><a class="github-link" href="https://github.com/TihimRahman/NYC311-Data-Pipeline">github.com/TihimRahman/NYC311-Data-Pipeline</a></p>
+
+  <hr />
+
+  <!-- ARCHITECTURE -->
+  <section>
+    <div class="section-label">Architecture — Event-Driven ELT</div>
+    <div class="arch-flow">
+      <div class="arch-box"><strong>Socrata API</strong><span>NYC 311</span></div>
+      <div class="arch-arrow">›</div>
+      <div class="arch-box"><strong>AWS S3</strong><span>raw JSON</span></div>
+      <div class="arch-arrow">›</div>
+      <div class="arch-box"><strong>Snowflake</strong><span>bronze / silver</span></div>
+      <div class="arch-arrow">›</div>
+      <div class="arch-box"><strong>dbt Marts</strong><span>star schema</span></div>
+      <div class="arch-arrow">›</div>
+      <div class="arch-box"><strong>Dashboards</strong><span>BI</span></div>
+    </div>
+    <p class="arch-caption">Orchestrated by Airflow Assets (event-driven) · 69 dbt tests + data contracts</p>
+  </section>
+
+  <hr />
+
+  <!-- AIRFLOW ASSET LINEAGE -->
+  <section>
+    <div class="section-label">Airflow Asset Lineage</div>
+    <div class="asset-img-wrap">
+      <img src="asset.png" alt="Airflow Asset lineage — extraction pipeline produces bronze_complaints asset, which triggers the dbt pipeline" />
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- HIGHLIGHTS -->
+  <section class="highlights">
+    <div class="section-label">Highlights</div>
+    <ul>
+      <li>End-to-end ELT: Socrata API → S3 → Snowflake, raw JSON shaped into analytics-ready star schema marts via dbt.</li>
+      <li>69 dbt tests and typed data contracts that fail the build on schema drift — bad data never reaches BI.</li>
+      <li>Event-driven Airflow Assets decouple extraction from transformation — no polling, no cron coupling.</li>
+      <li>Fully containerized with Docker — one-command, reproducible setup for any developer.</li>
+    </ul>
+  </section>
+
+  <hr />
+
+  <!-- STACK -->
+  <section>
+    <div class="section-label">Stack</div>
+    <div class="stack-chips">
+      <span class="chip">Snowflake</span>
+      <span class="chip">dbt</span>
+      <span class="chip">Airflow</span>
+      <span class="chip">AWS S3</span>
+      <span class="chip">Docker</span>
+      <span class="chip">Python</span>
+      <span class="chip">Kimball star schema</span>
+      <span class="chip">SCD Type 2</span>
+      <span class="chip">data contracts</span>
+      <span class="chip">CI/CD</span>
+    </div>
+  </section>
+
+  <hr />
+
+  <!-- POWER BI DASHBOARD -->
+  <section>
+    <div class="section-label">Power BI Dashboard</div>
+    <div class="dashboard-wrap">
+      <img src="powerbi_dashboard.png" alt="NYC 311 Power BI Dashboard — complaint volume, resolution rate, borough and category breakdown, daily trend" />
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>github.com/TihimRahman · linkedin.com/in/tihimrahman</span>
+    <span>02 / 02</span>
+  </div>
+
+</body>
+</html>

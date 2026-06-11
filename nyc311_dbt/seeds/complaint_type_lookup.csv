@@ -1,0 +1,31 @@
+complaint_type,category,is_quality_of_life,is_emergency
+Illegal Parking,Transportation,false,false
+Noise - Residential,Noise,true,false
+Noise - Street/Sidewalk,Noise,true,false
+Blocked Driveway,Transportation,false,false
+Unsanitary Condition,Sanitation,true,false
+Heat/Hot Water,Housing,true,true
+Street Condition,Infrastructure,false,false
+Noise - Commercial,Noise,true,false
+Sewer,Infrastructure,false,true
+Plumbing,Housing,false,false
+Damaged Tree,Environment,false,false
+Water System,Infrastructure,false,true
+Paint/Plaster,Housing,false,false
+Dirty Condition,Sanitation,true,false
+Abandoned Vehicle,Transportation,false,false
+Noise,Noise,true,false
+Noise - Vehicle,Noise,true,false
+Missed Collection,Sanitation,true,false
+Door/Window,Housing,false,false
+Homeless Person Assistance,Social Services,false,false
+Encampment,Social Services,false,false
+Overgrown Tree/Branches,Environment,false,false
+Water Leak,Housing,false,true
+Traffic Signal Condition,Infrastructure,false,true
+General,Other,false,false
+Maintenance Or Facility,Infrastructure,false,false
+Illegal Dumping,Sanitation,true,false
+Rodent,Sanitation,true,false
+Vendor Enforcement,Public Safety,false,false
+Electric,Housing,false,true

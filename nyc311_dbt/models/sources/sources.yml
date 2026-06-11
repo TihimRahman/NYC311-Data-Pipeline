@@ -1,0 +1,41 @@
+version: 2
+
+sources:
+  - name: nyc311
+    description: "Raw NYC 311 complaint data extracted from the Socrata API and landed in BRONZE via S3 stage."
+    database: nyc311
+    schema: bronze
+
+    config:
+      freshness:
+        warn_after: {count: 24, period: hour}
+        error_after: {count: 48, period: hour}
+        loaded_at_field: _dbt_extracted_at
+
+    tables:
+      - name: complaints_raw
+        description: "Raw 311 complaint records as VARIANT JSON, one row per API record. Loaded incrementally from S3 stage."
+        columns:
+          - name: raw_data
+            description: "The full complaint payload as a Snowflake VARIANT. Flattened in staging."
+          - name: _dbt_extracted_at
+            description: "NTZ timestamp when this row was loaded into BRONZE."
+            tests:
+              - not_null
+          - name: filename
+            description: "Name of the file as referenced in S3 bucket"
+            tests:
+              - not_null
+          - name: _dbt_source_relation
+            description: "Name of the source >> S3"
+
+
+
+
+
+
+         
+            
+
+
+  
