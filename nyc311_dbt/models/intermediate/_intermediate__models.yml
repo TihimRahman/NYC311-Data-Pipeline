@@ -170,13 +170,25 @@ models:
 
 unit_tests:
   - name: unit_is_resolved_classification
-    description: "Pins is_resolved/is_open behavior incl. the Closed-but-no-closed_at edge case"
+    description: "Pins is_resolved/is_open behavior including the Closed-but-no-closed_at edge case"
     model: int_complaints__enriched
     given:
       - input: ref('stg_nyc311__complaints')
         rows:
-          - {complaint_id: "1", status: "Closed", created_at: "2026-01-01 10:00:00", closed_at: "2026-01-02 10:00:00"}
-          # ... your rows here
+          # 1. Happy path: closed normally, 24h after creation
+          - {complaint_id: "1", status: "Closed",  created_at: "2026-01-01 10:00:00", closed_at: "2026-01-02 10:00:00"}
+          # 2. Edge: status says Closed, but no closed_at timestamp
+          - {complaint_id: "2", status: "Closed",  created_at: "2026-01-01 10:00:00", closed_at: null}
+          # 3. Plain open complaint
+          - {complaint_id: "3", status: "Open",    created_at: "2026-01-01 10:00:00", closed_at: null}
+          # 4. Bad data: closed BEFORE it was created
+          - {complaint_id: "4", status: "Closed",  created_at: "2026-01-02 10:00:00", closed_at: "2026-01-01 10:00:00"}
+          # 5. The 2,584-row scenario: has closed_at, but status still Pending
+          - {complaint_id: "5", status: "Pending", created_at: "2026-01-01 10:00:00", closed_at: "2026-01-01 16:00:00"}
     expect:
       rows:
-        - {complaint_id: "1", is_resolved: true, is_open: false}
+        - {complaint_id: "1", is_resolved: true, is_open: false, response_time_hours: 24}
+        - {complaint_id: "2", is_resolved: false, is_open: true, response_time_hours: null}
+        - {complaint_id: "3", is_resolved: false, is_open: true, response_time_hours: null}
+        - {complaint_id: "4", is_resolved: true, is_open: false, response_time_hours: null}
+        - {complaint_id: "5", is_resolved: false, is_open: true, response_time_hours: 6}
