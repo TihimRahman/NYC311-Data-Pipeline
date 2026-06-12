@@ -46,7 +46,7 @@ The `dashboard_daily_summary` gold table feeds directly into Power BI via Direct
 - **Custom schema macro** — overrides dbt's default schema naming to land models in BRONZE/SILVER/GOLD directly
 
 ### 🧪 Testing & Data Quality
-- **85+ data tests** — uniqueness, not-null, referential integrity, accepted values, custom expressions
+- **70 data tests** — uniqueness, not-null, referential integrity, accepted values, custom expressions
 - **Cross-column invariants** — model-level tests asserting relationships between columns (e.g., `closed_at >= created_at`)
 - **Source freshness checks** — defensive monitoring of bronze data staleness
 - **Generic + singular tests** — both YAML-declared and SQL-file-defined with **JINJA** implementation
